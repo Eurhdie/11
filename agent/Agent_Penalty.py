@@ -8,18 +8,18 @@ class Agent(Base_Agent):
     def __init__(self, host:str, agent_port:int, monitor_port:int, unum:int,
                  team_name:str, enable_log, enable_draw, wait_for_server=True, is_fat_proxy=False) -> None:
         
-        # define robot type
-        robot_type = 0 if unum == 1 else 4 # assume the goalkeeper uses uniform number 1 and the kicker uses any other number
+        # 定义机器人类型
+        robot_type = 0 if unum == 1 else 4 # 假设守门员使用编号1，其他球员使用其他编号
 
-        # Initialize base agent
-        # Args: Server IP, Agent Port, Monitor Port, Uniform No., Robot Type, Team Name, Enable Log, Enable Draw, play mode correction, Wait for Server, Hear Callback
+        # 初始化基础代理
+        # 参数: 服务器IP, 代理端口, 监控端口, 球衣号, 机器人类型, 队伍名称, 启用日志, 启用绘图, 比赛模式校正, 等待服务器, 听回调
         super().__init__(host, agent_port, monitor_port, unum, robot_type, team_name, enable_log, enable_draw, False, wait_for_server, None)
 
         self.enable_draw = enable_draw
-        self.state = 0  # 0-Normal, 1-Getting up, 2-Dive Left, 3-Dive Right, 4-Wait
+        self.state = 0  # 0-正常, 1-起身, 2-向左扑, 3-向右扑, 4-等待
 
-        self.kick_dir = 0 # kick direction
-        self.reset_kick = True # when True, a new random kick direction is generated
+        self.kick_dir = 0 # 踢球方向
+        self.reset_kick = True # 当为True时，生成一个新的随机踢球方向
         
 
     def think_and_send(self):
@@ -35,54 +35,52 @@ class Agent(Base_Agent):
         behavior = self.behavior
         PM = w.play_mode
 
-        #--------------------------------------- 1. Decide action
+        #--------------------------------------- 1. 决定动作
 
-        if PM in [w.M_BEFORE_KICKOFF, w.M_THEIR_GOAL, w.M_OUR_GOAL]: # beam to initial position and wait
+        if PM in [w.M_BEFORE_KICKOFF, w.M_THEIR_GOAL, w.M_OUR_GOAL]: # 传送到初始位置并等待
             self.state = 0
             self.reset_kick = True
             pos = (-14,0) if r.unum == 1 else (4.9,0)
             if np.linalg.norm(pos - r.loc_head_position[:2]) > 0.1 or behavior.is_ready("Get_Up"):
-                self.scom.commit_beam(pos, 0) # beam to initial position
+                self.scom.commit_beam(pos, 0) # 传送到初始位置
             else:
-                behavior.execute("Zero_Bent_Knees") # wait
-        elif self.state == 2: # dive left
-            self.state = 4 if behavior.execute("Dive_Left") else 2  # change state to wait after skill has finished
-        elif self.state == 3: # dive right
-            self.state = 4 if behavior.execute("Dive_Right") else 3 # change state to wait after skill has finished
-        elif self.state == 4: # wait (after diving or during opposing kick)
+                behavior.execute("Zero_Bent_Knees") # 等待
+        elif self.state == 2: # 向左扑
+            self.state = 4 if behavior.execute("Dive_Left") else 2  # 技能完成后状态改为等待
+        elif self.state == 3: # 向右扑
+            self.state = 4 if behavior.execute("Dive_Right") else 3 # 技能完成后状态改为等待
+        elif self.state == 4: # 等待（扑救后或对方踢球时）
             pass
-        elif self.state == 1 or behavior.is_ready("Get_Up"): # if getting up or fallen
-            self.state = 0 if behavior.execute("Get_Up") else 1 # return to normal state if get up behavior has finished
+        elif self.state == 1 or behavior.is_ready("Get_Up"): # 如果正在起身或倒地
+            self.state = 0 if behavior.execute("Get_Up") else 1 # 起身行为完成后返回正常状态
         elif PM == w.M_OUR_KICKOFF and r.unum == 1 or PM == w.M_THEIR_KICKOFF and r.unum != 1:
-            self.state = 4 # wait until next beam
-        elif r.unum == 1: # goalkeeper
+            self.state = 4 # 等待直到下次传送
+        elif r.unum == 1: # 守门员
             y_coordinate = np.clip(ball_2d[1], -1.1, 1.1)
-            behavior.execute("Walk", (-14,y_coordinate), True, 0, True, None) # Args: target, is_target_abs, ori, is_ori_abs, distance
+            behavior.execute("Walk", (-14,y_coordinate), True, 0, True, None) # 参数: 目标, 是否绝对目标, 方向, 是否绝对方向, 距离
             if ball_2d[0] < -10: 
-                self.state = 2 if ball_2d[1] > 0 else 3 # dive to defend
-        else: # kicker
-            if PM == w.M_OUR_KICKOFF and ball_2d[0] > 5: # check ball position to make sure I see it
+                self.state = 2 if ball_2d[1] > 0 else 3 # 扑救防守
+        else: # 踢球者
+            if PM == w.M_OUR_KICKOFF and ball_2d[0] > 5: # 检查球的位置以确保我能看到它
                 if self.reset_kick: 
                     self.kick_dir = random.choice([-7.5,7.5]) 
                     self.reset_kick = False
                 behavior.execute("Basic_Kick", self.kick_dir)
             else:
-                behavior.execute("Zero_Bent_Knees") # wait
+                behavior.execute("Zero_Bent_Knees") # 等待
 
-        #--------------------------------------- 2. Broadcast
+        #--------------------------------------- 2. 广播
         self.radio.broadcast()
 
-        #--------------------------------------- 3. Send to server
+        #--------------------------------------- 3. 发送至服务器
         self.scom.commit_and_send( r.get_command() )
 
-        #---------------------- annotations for debugging
+        #---------------------- 调试注释
         if self.enable_draw: 
             d = w.draw
             if r.unum == 1:
                 d.annotation((*my_head_pos_2d, 0.8), "Goalkeeper" , d.Color.yellow, "status")
             else:
                 d.annotation((*my_head_pos_2d, 0.8), "Kicker" , d.Color.yellow, "status")
-                if PM == w.M_OUR_KICKOFF: # draw arrow to indicate kick direction
+                if PM == w.M_OUR_KICKOFF: # 绘制箭头以指示踢球方向
                     d.arrow(ball_2d, ball_2d + 5*M.vector_from_angle(self.kick_dir), 0.4, 3, d.Color.cyan_light, "Target")
-
-
