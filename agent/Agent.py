@@ -8,40 +8,41 @@ class Agent(Base_Agent):
     def __init__(self, host:str, agent_port:int, monitor_port:int, unum:int,
                  team_name:str, enable_log, enable_draw, wait_for_server=True, is_fat_proxy=False) -> None:
         
-        # define robot type
+        # 定义机器人类型
         robot_type = (0,1,1,1,2,3,3,3,4,4,4)[unum-1]
 
-        # Initialize base agent
-        # Args: Server IP, Agent Port, Monitor Port, Uniform No., Robot Type, Team Name, Enable Log, Enable Draw, play mode correction, Wait for Server, Hear Callback
+        # 初始化基础代理
+        # 参数: 服务器IP, 代理端口, 监控端口, 球衣号码, 机器人类型, 队伍名称, 启用日志, 启用绘图, 比赛模式修正, 等待服务器, 听回调
         super().__init__(host, agent_port, monitor_port, unum, robot_type, team_name, enable_log, enable_draw, True, wait_for_server, None)
 
         self.enable_draw = enable_draw
-        self.state = 0  # 0-Normal, 1-Getting up, 2-Kicking
+        self.state = 0  # 0-正常, 1-起身, 2-踢球
         self.kick_direction = 0
         self.kick_distance = 0
         self.fat_proxy_cmd = "" if is_fat_proxy else None
-        self.fat_proxy_walk = np.zeros(3) # filtered walk parameters for fat proxy
+        self.fat_proxy_walk = np.zeros(3) # fat proxy的过滤行走参数
 
-        self.init_pos = ([-14,0],[-9,-5],[-9,0],[-9,5],[-5,-5],[-5,0],[-5,5],[-1,-6],[-1,-2.5],[-1,2.5],[-1,6])[unum-1] # initial formation
+        self.init_pos = ([-14,0],[-9,-5],[-9,0],[-9,5],[-5,-5],[-5,0],[-5,5],[-1,-6],[-1,-2.5],[-1,2.5],[-1,6])[unum-1] # 初始阵型
 
 
     def beam(self, avoid_center_circle=False):
         r = self.world.robot
-        pos = self.init_pos[:] # copy position list 
+        pos = self.init_pos[:] # 复制位置列表 
         self.state = 0
 
-        # Avoid center circle by moving the player back 
+        # 通过将玩家向后移动来避免中心圆
         if avoid_center_circle and np.linalg.norm(self.init_pos) < 2.5:
             pos[0] = -2.3 
 
         if np.linalg.norm(pos - r.loc_head_position[:2]) > 0.1 or self.behavior.is_ready("Get_Up"):
-            self.scom.commit_beam(pos, M.vector_angle((-pos[0],-pos[1]))) # beam to initial position, face coordinate (0,0)
+            self.scom.commit_beam(pos, M.vector_angle((-pos[0],-pos[1]))) # 传送到初始位置，面向坐标(0,0)
         else:
-            if self.fat_proxy_cmd is None: # normal behavior
+            if self.fat_proxy_cmd is None: # 正常行为
                 self.behavior.execute("Zero_Bent_Knees_Auto_Head")
-            else: # fat proxy behavior
+            else: # fat proxy行为
                 self.fat_proxy_cmd += "(proxy dash 0 0 0)"
-                self.fat_proxy_walk = np.zeros(3) # reset fat proxy walk
+                self.fat_proxy_walk = np.zeros(3) # 重置fat proxy行走
+
 
 
     def move(self, target_2d=(0,0), orientation=None, is_orientation_absolute=True,
