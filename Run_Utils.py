@@ -1,10 +1,10 @@
 def main():
 
     from scripts.commons.Script import Script
-    script = Script() #Initialize: load config file, parse arguments, build cpp modules (warns the user about inconsistencies before choosing a test script)
+    script = Script() # 初始化：加载配置文件,解析参数,构建C++模块（在选择测试脚本之前警告用户不一致性)
 
-    # Allows using local version of StableBaselines3 (e.g. https://github.com/m-abr/Adaptive-Symmetry-Learning)
-    # place the 'stable-baselines3' folder in the parent directory of this project
+    # 允许使用本地的StableBaselines3版本（例如：https://github.com/m-abr/Adaptive-Symmetry-Learning)
+    # 将'stable-baselines3'文件夹放在此项目的父目录中
     import sys
     from os.path import dirname, abspath, join
     sys.path.insert( 0, join( dirname(dirname( abspath(__file__) )), "stable-baselines3") )
@@ -36,39 +36,39 @@ def main():
         mod = import_module(chosen[0]+chosen[1])
 
         '''
-        An imported script should not automatically execute the main code because:
-            - Multiprocessing methods, such as 'forkserver' and 'spawn', will execute the main code in every child
-            - The script can only be called once unless it is reloaded
+        导入的脚本不应自动执行主代码,因为：
+            - 多进程方法,如'forkserver'和'spawn',会在每个子进程中执行主代码
+            - 除非重新加载,否则脚本只能被调用一次
         '''
         if not is_gym:
             ''' 
-            Utils receive a script support object with user-defined arguments and useful methods
-            Each util must implement an execute() method, which may or may not return
+            Utils接收一个包含用户定义参数和有用方法的脚本支持对象
+            每个util必须实现一个execute()方法,该方法可能返回也可能不返回
             '''
             from world.commons.Draw import Draw
             from agent.Base_Agent import Base_Agent
             obj = getattr(mod,cls_name)(script)
             try:
-                obj.execute() # Util may return normally or through KeyboardInterrupt
+                obj.execute() # Util可能正常返回或通过KeyboardInterrupt中断
             except KeyboardInterrupt:
                 print("\nctrl+c pressed, returning...\n")
-            Draw.clear_all()            # clear all drawings
-            Base_Agent.terminate_all()  # close all server sockets + monitor socket
-            script.players = []         # clear list of players created through batch commands
+            Draw.clear_all()            # 清除所有绘图
+            Base_Agent.terminate_all()  # 关闭所有服务器套接字 + 监控套接字
+            script.players = []         # 清除通过批处理命令创建的玩家列表
             del obj
 
         else:
             ''' 
-            Gyms must implement a class Train() which is initialized with user-defined arguments and implements:
-                train() - method to run the optimization and save a new model
-                test(folder_dir, folder_name, model_file) - method to load an existing model and test it
+            Gyms必须实现一个Train类,该类使用用户定义的参数进行初始化并实现：
+                train() - 运行优化并保存新模型的方法
+                test(folder_dir, folder_name, model_file) - 加载现有模型并测试它的方法
             '''
             from scripts.commons.Train_Base import Train_Base
 
-            print("\nBefore using GYMS, make sure all server parameters are set correctly")
-            print("(sync mode should be 'On', real time should be 'Off', cheats should be 'On', ...)")
-            print("To change these parameters go to the previous menu, and select Server\n")
-            print("Also, GYMS start their own servers, so don't run any server manually")
+            print("\n在使用GYMS之前,请确保所有服务器参数设置正确")
+            print("（同步模式应为'On',实时模式应为'Off',作弊模式应为'On',...)")
+            print("要更改这些参数,请返回上一菜单,并选择Server\n")
+            print("此外,GYMS会启动自己的服务器,因此不要手动运行任何服务器")
             
             while True:
                 try:
@@ -87,7 +87,7 @@ def main():
                         mod.Train(script).train(model_info)
 
 
-# allow child processes to bypass this file
+# 允许子进程绕过此文件
 if __name__ == "__main__":
     try:
         main()
