@@ -37,6 +37,11 @@ class Agent(Base_Agent):
 
         #--------------------------------------- 1. 决定动作
 
+        #让一个机器人绕一个半径为3m的圆圈
+
+        if r.unum == 1: 
+            behavior.execute("Circle", 3, 0.5, 0.5)
+
         if PM in [w.M_BEFORE_KICKOFF, w.M_THEIR_GOAL, w.M_OUR_GOAL]: # 传送到初始位置并等待
             self.state = 0
             self.reset_kick = True

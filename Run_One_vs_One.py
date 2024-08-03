@@ -11,4 +11,3 @@ script.batch_create(Agent, ((a.i, a.p, a.m, a.u, "Opponent", True, True),)) # �
 while True:
     script.batch_execute_agent() # 批量执行代理
     script.batch_receive() # 批量接收信息
-
