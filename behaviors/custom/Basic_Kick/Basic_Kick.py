@@ -15,7 +15,7 @@ class Basic_Kick():
         r_type = self.world.robot.type
         self.bias_dir = [22,29,26,29,22][self.world.robot.type]
         self.ball_x_limits = ((0.19,0.215), (0.2,0.22), (0.19,0.22), (0.2,0.215), (0.2,0.215))[r_type]
-        self.ball_y_limits = ((-0.115,-0.1), (-0.125,-0.095), (-0.12,-0.1), (-0.13,-0.105), (-0.09,-0.06))[r_type]
+        self.ball_y_limits = ((-0.115,-0.3), (-0.125,-0.095), (-0.12,-0.1), (-0.13,-0.105), (-0.09,-0.06))[r_type]
         self.ball_x_center = (self.ball_x_limits[0] + self.ball_x_limits[1])/2
         self.ball_y_center = (self.ball_y_limits[0] + self.ball_y_limits[1])/2
       
